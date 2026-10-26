@@ -1103,7 +1103,13 @@ function ChannelsPanel() {
             const srtUrl =
               channel.routing?.srt_publish_url ||
               `srt://${ingestHost}:10080?streamid=#!::r=live/${channel.stream_key},m=publish`;
-            const playbackUrl = `${import.meta.env.VITE_HLS_BASE.replace(/\/$/, "")}/live/${channel.stream_key}.m3u8`;
+            // Public HLS URL for external players (VLC, smart TVs, other
+            // sites). Uses the playback ID — never the stream key — and the
+            // backend's own /api/hls route. The old value pointed at a raw
+            // CDN /hls/ path that no longer exists and exposed the key.
+            const playbackUrl = channel.playback_id
+              ? `${import.meta.env.VITE_API_BASE.replace(/\/$/, "")}/api/hls/${channel.playback_id}.m3u8`
+              : "";
             const appBase = import.meta.env.BASE_URL.replace(/\/$/, "");
             // Phase 2: public watch links use the playback ID, never the
             // stream key (ingest credential).
@@ -1237,7 +1243,9 @@ function ChannelsPanel() {
                   <CopyField label="RTMP Server" value={rtmpServer} mono />
                   <CopyField label="Stream Key" value={streamKey} mono />
                   <CopyField label="SRT URL" value={srtUrl} mono />
-                  <CopyField label="Playback URL" value={playbackUrl} mono />
+                  {playbackUrl && (
+                    <CopyField label="Playback URL" value={playbackUrl} mono />
+                  )}
                   <CopyField label="Watch Page" value={watchUrl} />
                 </div>
 
