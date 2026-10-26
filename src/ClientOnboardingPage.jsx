@@ -177,6 +177,18 @@ function ResultRow({ label, value, onCopy }) {
 /* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
+const PLAN_LABELS = {
+  starter: "Essential",
+  pro: "Deluxe",
+  enterprise: "Premium",
+  internal: "Internal",
+};
+const LINK_STATE_LABELS = {
+  linked: "Linked",
+  email_match: "Email match",
+  not_in_app: "Not in app",
+};
+
 function ClientOnboardingPage({ setActivePage }) {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
@@ -184,10 +196,175 @@ function ClientOnboardingPage({ setActivePage }) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
+  // ── Import from WHMCS (2026-10-26) ──
+  // Lists WHMCS clients with a StreamControl product; "Import" prefills this
+  // wizard and links billing automatically after the tenant is created;
+  // "Link" connects an organization that already exists. Server-side checks
+  // (whmcs_link_service.js) block unsafe links; nothing is written to WHMCS.
+  const [whmcsClients, setWhmcsClients] = useState(null);
+  const [whmcsLoading, setWhmcsLoading] = useState(false);
+  const [whmcsError, setWhmcsError] = useState("");
+  const [pendingLink, setPendingLink] = useState(null);
+  const [orgOptions, setOrgOptions] = useState([]);
+  const [linkForm, setLinkForm] = useState(null);
+  const [linkPreview, setLinkPreview] = useState(null);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const [linkDone, setLinkDone] = useState(null);
+  const [linkForce, setLinkForce] = useState(false);
+
   const generatedSlug = useMemo(
     () => slugify(form.organization_name),
     [form.organization_name],
   );
+
+  const loadWhmcsClients = async () => {
+    try {
+      setWhmcsLoading(true);
+      setWhmcsError("");
+      const res = await api.get("/api/admin/whmcs/clients");
+      setWhmcsClients(res.data.clients || []);
+    } catch (err) {
+      setWhmcsError(
+        err.response?.data?.message || "Failed to load WHMCS clients.",
+      );
+    } finally {
+      setWhmcsLoading(false);
+    }
+  };
+
+  const loadOrgOptions = async () => {
+    if (orgOptions.length) return;
+    try {
+      const res = await api.get("/api/organizations");
+      setOrgOptions(res.data.organizations || []);
+    } catch {
+      setOrgOptions([]);
+    }
+  };
+
+  const startImport = (row) => {
+    const orgName = row.company || row.client_name || "";
+    setForm((prev) => ({
+      ...prev,
+      organization_name: orgName,
+      organization_slug: "",
+      subscription_plan: row.plan_key || prev.subscription_plan,
+      client_name: row.contact_name || row.client_name || "",
+      client_email: row.email || "",
+      client_password: "",
+      organization_role: "owner",
+      channel_name: orgName ? `${orgName} Main` : prev.channel_name,
+    }));
+    setPendingLink({
+      whmcs_client_id: row.whmcs_client_id,
+      service_id: row.service_id,
+      client_name: row.client_name,
+    });
+    setResult(null);
+    setError("");
+    setNotice(
+      `Importing WHMCS client #${row.whmcs_client_id} (${row.client_name}). Enter a temporary password, review the details, then click Create Client Tenant — billing will be linked automatically.`,
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const openLinkPanel = (row) => {
+    loadOrgOptions();
+    setLinkForm({
+      organization_id: row.link?.organization_id
+        ? String(row.link.organization_id)
+        : "",
+      whmcs_client_id: row.whmcs_client_id,
+      service_id: row.service_id,
+      client_name: row.client_name,
+    });
+    setLinkPreview(null);
+    setLinkError("");
+    setLinkDone(null);
+    setLinkForce(false);
+  };
+
+  const runLinkPreview = async (linkInput = linkForm) => {
+    if (!linkInput?.organization_id) {
+      setLinkError("Choose the organization to link.");
+      return null;
+    }
+    try {
+      setLinkBusy(true);
+      setLinkError("");
+      setLinkDone(null);
+      const res = await api.post("/api/admin/whmcs/link/preview", {
+        organization_id: linkInput.organization_id,
+        whmcs_client_id: linkInput.whmcs_client_id,
+        service_id: linkInput.service_id,
+      });
+      setLinkPreview(res.data.preview);
+      return res.data.preview;
+    } catch (err) {
+      setLinkError(
+        err.response?.data?.message || "Failed to preview the link.",
+      );
+      return null;
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const applyLinkRequest = async (linkInput = linkForm, force = linkForce) => {
+    try {
+      setLinkBusy(true);
+      setLinkError("");
+      const res = await api.post("/api/admin/whmcs/link", {
+        organization_id: linkInput.organization_id,
+        whmcs_client_id: linkInput.whmcs_client_id,
+        service_id: linkInput.service_id,
+        force,
+      });
+      setLinkDone(res.data.after);
+      setLinkPreview(res.data.preview);
+      if (whmcsClients) loadWhmcsClients();
+      return res.data.after;
+    } catch (err) {
+      if (err.response?.data?.preview)
+        setLinkPreview(err.response.data.preview);
+      setLinkError(
+        err.response?.data?.message || "Failed to link the WHMCS client.",
+      );
+      return null;
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  // After "Create Client Tenant" for an imported client: preview, and link
+  // automatically only when nothing blocks it; otherwise leave the preview
+  // open for the operator to decide.
+  const linkImportedOrganization = async (organizationId) => {
+    const linkInput = {
+      organization_id: String(organizationId),
+      whmcs_client_id: pendingLink.whmcs_client_id,
+      service_id: pendingLink.service_id,
+      client_name: pendingLink.client_name,
+    };
+    setLinkForm(linkInput);
+    setLinkForce(false);
+    const preview = await runLinkPreview(linkInput);
+    if (!preview) return;
+    if (preview.blocked) {
+      setLinkError(
+        "The new tenant was created, but billing was not linked automatically — review the issues below.",
+      );
+      return;
+    }
+    const after = await applyLinkRequest(linkInput, false);
+    if (after) {
+      setNotice(
+        `Client onboarded and linked to WHMCS client #${after.whmcs_client_id}: ${PLAN_LABELS[after.plan_key] || after.plan_key}, ${after.status}.`,
+      );
+      setPendingLink(null);
+    }
+  };
 
   const updateForm = (e) => {
     const { name, value } = e.target;
@@ -227,6 +404,10 @@ function ClientOnboardingPage({ setActivePage }) {
 
       setResult(data);
       setNotice("Client onboarded successfully.");
+
+      if (pendingLink && data.organization?.id) {
+        await linkImportedOrganization(data.organization.id);
+      }
 
       if (data.organization?.id) {
         localStorage.setItem(
@@ -340,6 +521,299 @@ function ClientOnboardingPage({ setActivePage }) {
         </div>
       )}
 
+      {/* ── Import from WHMCS ── */}
+      <div className="ob-panel ob-panel--wide" style={{ marginBottom: 24 }}>
+        <div className="ob-panel-header">
+          <div className="ob-step-badge">W</div>
+          <div>
+            <h3 className="ob-panel-title">Import from WHMCS</h3>
+            <p className="ob-panel-sub">
+              Clients who already bought StreamControl in WHMCS. Import creates
+              the tenant with this wizard and links billing; Link connects an
+              existing organization. Nothing is changed in WHMCS.
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 12,
+          }}
+        >
+          <button
+            type="button"
+            className="ob-btn-ghost"
+            onClick={loadWhmcsClients}
+            disabled={whmcsLoading}
+          >
+            {whmcsLoading
+              ? "Loading WHMCS clients…"
+              : whmcsClients
+                ? "Refresh WHMCS clients"
+                : "Load WHMCS clients"}
+          </button>
+          {pendingLink && (
+            <span className="ob-label-hint" style={{ alignSelf: "center" }}>
+              Pending import: WHMCS client #{pendingLink.whmcs_client_id} (
+              {pendingLink.client_name}) — billing links after Create Client
+              Tenant.{" "}
+              <button
+                type="button"
+                className="ob-btn-ghost"
+                onClick={() => setPendingLink(null)}
+              >
+                Cancel import
+              </button>
+            </span>
+          )}
+        </div>
+
+        {whmcsError && (
+          <div className="ob-banner ob-banner--error">{whmcsError}</div>
+        )}
+
+        {whmcsClients && whmcsClients.length === 0 && (
+          <p className="ob-panel-sub">
+            No WHMCS clients hold a StreamControl product.
+          </p>
+        )}
+
+        {whmcsClients && whmcsClients.length > 0 && (
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ textAlign: "left", opacity: 0.75 }}>
+                  <th style={{ padding: "8px 6px" }}>WHMCS #</th>
+                  <th style={{ padding: "8px 6px" }}>Client</th>
+                  <th style={{ padding: "8px 6px" }}>Email</th>
+                  <th style={{ padding: "8px 6px" }}>Plan</th>
+                  <th style={{ padding: "8px 6px" }}>Service</th>
+                  <th style={{ padding: "8px 6px" }}>Next due</th>
+                  <th style={{ padding: "8px 6px" }}>In app</th>
+                  <th style={{ padding: "8px 6px" }} />
+                </tr>
+              </thead>
+              <tbody>
+                {whmcsClients.map((row) => {
+                  const active =
+                    String(row.service_status).toLowerCase() === "active";
+                  const state = row.link?.state;
+                  return (
+                    <tr
+                      key={`${row.whmcs_client_id}-${row.service_id}`}
+                      style={{
+                        borderTop: "1px solid rgba(148,163,184,0.18)",
+                        opacity: active ? 1 : 0.55,
+                      }}
+                    >
+                      <td style={{ padding: "8px 6px" }}>
+                        {row.whmcs_client_id}
+                      </td>
+                      <td style={{ padding: "8px 6px" }}>{row.client_name}</td>
+                      <td style={{ padding: "8px 6px" }}>{row.email || "—"}</td>
+                      <td style={{ padding: "8px 6px" }}>
+                        {PLAN_LABELS[row.plan_key] || row.plan_key}
+                      </td>
+                      <td style={{ padding: "8px 6px" }}>
+                        {row.service_status || "—"}
+                      </td>
+                      <td style={{ padding: "8px 6px" }}>
+                        {row.next_due || "—"}
+                      </td>
+                      <td style={{ padding: "8px 6px" }}>
+                        {LINK_STATE_LABELS[state] || state}
+                        {row.link?.organization_name
+                          ? ` — ${row.link.organization_name}`
+                          : ""}
+                      </td>
+                      <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
+                        {state === "not_in_app" && active && (
+                          <button
+                            type="button"
+                            className="ob-btn-primary"
+                            onClick={() => startImport(row)}
+                          >
+                            Import
+                          </button>
+                        )}{" "}
+                        {state !== "linked" && (
+                          <button
+                            type="button"
+                            className="ob-btn-ghost"
+                            onClick={() => openLinkPanel(row)}
+                          >
+                            Link existing org
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {linkForm && (
+          <div
+            style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: "1px solid rgba(148,163,184,0.18)",
+            }}
+          >
+            <h4 className="ob-panel-title" style={{ fontSize: 15 }}>
+              Link WHMCS client #{linkForm.whmcs_client_id} (
+              {linkForm.client_name})
+            </h4>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+                margin: "10px 0",
+              }}
+            >
+              <OBSelect
+                value={linkForm.organization_id}
+                onChange={(e) => {
+                  setLinkForm((prev) => ({
+                    ...prev,
+                    organization_id: e.target.value,
+                  }));
+                  setLinkPreview(null);
+                  setLinkDone(null);
+                  setLinkForce(false);
+                }}
+              >
+                <option value="">Choose organization…</option>
+                {orgOptions.map((org) => (
+                  <option key={org.id} value={String(org.id)}>
+                    {org.name} (#{org.id})
+                  </option>
+                ))}
+              </OBSelect>
+              <button
+                type="button"
+                className="ob-btn-ghost"
+                onClick={() => runLinkPreview()}
+                disabled={linkBusy}
+              >
+                {linkBusy ? "Checking…" : "Preview"}
+              </button>
+              <button
+                type="button"
+                className="ob-btn-ghost"
+                onClick={() => {
+                  setLinkForm(null);
+                  setLinkPreview(null);
+                  setLinkError("");
+                  setLinkDone(null);
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            {linkError && (
+              <div className="ob-banner ob-banner--error">{linkError}</div>
+            )}
+
+            {linkPreview && (
+              <div className="ob-panel-sub" style={{ lineHeight: 1.7 }}>
+                <div>
+                  <strong>{linkPreview.organization.name}</strong> (#
+                  {linkPreview.organization.id}) → WHMCS client #
+                  {linkPreview.client.id} {linkPreview.client.name}
+                </div>
+                <div>
+                  Will set: plan{" "}
+                  <strong>
+                    {PLAN_LABELS[linkPreview.planned.plan_key] ||
+                      linkPreview.planned.plan_key}
+                  </strong>
+                  , status <strong>{linkPreview.planned.status}</strong>, next
+                  billing{" "}
+                  <strong>
+                    {linkPreview.planned.current_period_end || "unchanged"}
+                  </strong>
+                </div>
+                {linkPreview.warnings.map((w) => (
+                  <div key={w} style={{ color: "#fbbf24" }}>
+                    Warning: {w}
+                  </div>
+                ))}
+                {linkPreview.problems.map((p) => (
+                  <div key={p} style={{ color: "#f87171" }}>
+                    Blocked: {p}
+                  </div>
+                ))}
+                {!linkDone && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {linkPreview.blocked && (
+                      <label
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={linkForce}
+                          onChange={(e) => setLinkForce(e.target.checked)}
+                        />
+                        I understand the blocked items above and want to link
+                        anyway
+                      </label>
+                    )}
+                    <button
+                      type="button"
+                      className="ob-btn-primary"
+                      disabled={linkBusy || (linkPreview.blocked && !linkForce)}
+                      onClick={() => applyLinkRequest()}
+                    >
+                      {linkBusy ? "Linking…" : "Link billing"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {linkDone && (
+              <div
+                className="ob-banner ob-banner--success"
+                style={{ marginTop: 10 }}
+              >
+                Linked: organization #{linkDone.organization_id} → WHMCS client
+                #{linkDone.whmcs_client_id} —{" "}
+                {PLAN_LABELS[linkDone.plan_key] || linkDone.plan_key},{" "}
+                {linkDone.status}. The client can confirm on Subscription →
+                Refresh Billing.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ── Form ── */}
       <form className="ob-form" onSubmit={submitOnboarding}>
         {/* Step 1 — Organization */}
@@ -394,9 +868,9 @@ function ClientOnboardingPage({ setActivePage }) {
                 value={form.subscription_plan}
                 onChange={updateForm}
               >
-                <option value="starter">Starter</option>
-                <option value="pro">Pro</option>
-                <option value="enterprise">Enterprise</option>
+                <option value="starter">Essential</option>
+                <option value="pro">Deluxe</option>
+                <option value="enterprise">Premium</option>
                 <option value="internal">Internal</option>
               </OBSelect>
             </Field>
