@@ -1,0 +1,81 @@
+name: Deploy NLM Stream Frontend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nlm-stream-frontend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to DirectAdmin
+    runs-on: ubuntu-latest
+    environment:
+      name: NLM Stream env
+    timeout-minutes: 20
+    env:
+      VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+      VITE_HLS_BASE: ${{ vars.VITE_HLS_BASE }}
+      VITE_INGEST_HOST: ${{ vars.VITE_INGEST_HOST }}
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate configuration
+        shell: bash
+        run: |
+          for name in VITE_API_BASE VITE_HLS_BASE VITE_INGEST_HOST FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing required configuration: $name"
+              exit 1
+            fi
+          done
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production frontend
+        run: npm run build
+
+      - name: Verify build output
+        shell: bash
+        run: |
+          test -s dist/index.html
+          test -d dist/assets
+
+      - name: Install FTPS client
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy build via verified FTPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          # FTP login starts in the site's nlm-stream directory.
+          # Never mirror with --delete; preserve .htaccess and other server files.
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<'LFTP'
+          set cmd:fail-exit yes
+          set net:timeout 20
+          set net:max-retries 2
+          set ftp:ssl-allow yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ssl:verify-certificate yes
+          set xfer:clobber yes
+          mirror --reverse --verbose --exclude-glob index.html --exclude-glob .htaccess dist/ /
+          put dist/index.html -o /index.html
+          bye
+          LFTP
