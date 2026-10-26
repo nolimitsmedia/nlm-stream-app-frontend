@@ -1,0 +1,722 @@
+/* Phase 3.1.1 — Modern Scheduling UI. Scoped to Scheduled Streams. */
+.ss-page--modern {
+  --nlm-blue: #136afe;
+  --nlm-cyan: #009bff;
+  --nlm-orange: #fd9d00;
+  --nlm-panel: #0d1c31;
+  --nlm-panel-2: #101f35;
+  --nlm-border: rgba(140, 169, 210, 0.16);
+  --nlm-muted: #8298b8;
+  position: relative;
+  overflow: visible;
+}
+.nlm-modern-header {
+  padding-bottom: 8px;
+}
+.nlm-header-icon {
+  background: linear-gradient(
+    145deg,
+    rgba(19, 106, 254, 0.22),
+    rgba(0, 155, 255, 0.08)
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(55, 142, 255, 0.22),
+    0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.nlm-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fd9d00;
+  margin-bottom: 5px;
+}
+.nlm-scheduler-card {
+  overflow: visible !important;
+  background: linear-gradient(
+    180deg,
+    rgba(17, 34, 57, 0.96),
+    rgba(11, 26, 45, 0.98)
+  );
+  border: 1px solid var(--nlm-border);
+  box-shadow: 0 22px 55px rgba(1, 8, 20, 0.2);
+}
+.nlm-form-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(133, 161, 199, 0.1);
+}
+.nlm-form-section {
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(133, 161, 199, 0.09);
+}
+.nlm-form-section:last-of-type {
+  border-bottom: 0;
+}
+.nlm-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.nlm-section-heading > div {
+  display: grid;
+  gap: 2px;
+}
+.nlm-section-heading strong {
+  font-size: 14px;
+  color: #f7fbff;
+}
+.nlm-section-heading small {
+  font-size: 12px;
+  color: var(--nlm-muted);
+}
+.nlm-step {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(19, 106, 254, 0.1);
+  border: 1px solid rgba(19, 106, 254, 0.22);
+  font-size: 10px;
+  font-weight: 900;
+  color: #68a7ff;
+}
+.nlm-details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.nlm-schedule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.15fr;
+  gap: 14px;
+  align-items: start;
+}
+.nlm-dtp,
+.nlm-tz {
+  position: relative;
+  min-width: 0;
+}
+.nlm-date-trigger,
+.nlm-timezone-trigger {
+  width: 100%;
+  min-height: 76px;
+  border: 1px solid rgba(135, 166, 208, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(13, 30, 51, 0.98),
+    rgba(9, 23, 40, 0.98)
+  );
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 13px;
+  color: #edf6ff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+.nlm-date-trigger:hover,
+.nlm-timezone-trigger:hover {
+  border-color: rgba(81, 146, 238, 0.38);
+  transform: translateY(-1px);
+}
+.nlm-date-trigger.is-open,
+.nlm-timezone-trigger.is-open {
+  border-color: rgba(19, 106, 254, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(19, 106, 254, 0.1),
+    0 14px 30px rgba(0, 0, 0, 0.18);
+}
+.nlm-date-trigger--orange.is-open {
+  border-color: rgba(253, 157, 0, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(253, 157, 0, 0.09),
+    0 14px 30px rgba(0, 0, 0, 0.18);
+}
+.nlm-date-trigger__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #69a9ff;
+  background: rgba(19, 106, 254, 0.12);
+  border: 1px solid rgba(19, 106, 254, 0.18);
+  flex: 0 0 auto;
+}
+.nlm-date-trigger--orange .nlm-date-trigger__icon {
+  color: #ffc15d;
+  background: rgba(253, 157, 0, 0.1);
+  border-color: rgba(253, 157, 0, 0.18);
+}
+.nlm-date-trigger__icon--globe {
+  color: #b78cff;
+  background: rgba(145, 91, 255, 0.1);
+  border-color: rgba(145, 91, 255, 0.18);
+}
+.nlm-date-trigger__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.nlm-date-trigger__main strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nlm-date-trigger__main small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #8ca4c4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nlm-date-trigger__chevron {
+  color: #607a9e;
+}
+.nlm-zone-code {
+  font-size: 10px;
+  font-weight: 800;
+  color: #8eabd0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.nlm-picker-popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 9px);
+  left: 0;
+  width: min(350px, calc(100vw - 40px));
+  padding: 14px;
+  border-radius: 16px;
+  background: #0b1a2e;
+  border: 1px solid rgba(118, 157, 213, 0.22);
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.015) inset;
+}
+.nlm-calendar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.nlm-calendar-head strong {
+  font-size: 13px;
+}
+.nlm-icon-btn {
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  border: 1px solid rgba(134, 162, 201, 0.13);
+  background: rgba(255, 255, 255, 0.025);
+  color: #8fa8ca;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.nlm-icon-btn:hover {
+  color: white;
+  border-color: rgba(80, 145, 240, 0.35);
+  background: rgba(19, 106, 254, 0.08);
+}
+.nlm-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.nlm-calendar-weekdays {
+  margin-bottom: 4px;
+}
+.nlm-calendar-weekdays span {
+  font-size: 9px;
+  font-weight: 800;
+  color: #607898;
+  text-align: center;
+  padding: 5px 0;
+  text-transform: uppercase;
+}
+.nlm-calendar-day {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #d9e7f8;
+  font-size: 12px;
+  cursor: pointer;
+  position: relative;
+}
+.nlm-calendar-day:hover {
+  background: rgba(19, 106, 254, 0.1);
+  color: white;
+}
+.nlm-calendar-day.is-today:after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fd9d00;
+  transform: translateX(-50%);
+}
+.nlm-calendar-day.is-selected {
+  background: linear-gradient(135deg, #136afe, #009bff);
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(19, 106, 254, 0.28);
+}
+.nlm-calendar-day:disabled {
+  opacity: 0.22;
+  cursor: not-allowed;
+}
+.nlm-time-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(129, 159, 201, 0.1);
+}
+.nlm-time-panel__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #8aa4c7;
+}
+.nlm-time-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.nlm-time-controls select {
+  height: 33px;
+  border: 1px solid rgba(125, 157, 199, 0.15);
+  border-radius: 8px;
+  background: #10243d;
+  color: #eaf4ff;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.nlm-picker-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+.nlm-text-btn,
+.nlm-done-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.nlm-text-btn {
+  background: transparent;
+  color: #80a4d3;
+}
+.nlm-done-btn {
+  background: #136afe;
+  color: white;
+  box-shadow: 0 7px 16px rgba(19, 106, 254, 0.25);
+}
+.nlm-timezone-popover {
+  width: min(430px, calc(100vw - 40px));
+  right: 0;
+  left: auto;
+  padding: 10px;
+}
+.nlm-zone-search {
+  height: 42px;
+  border: 1px solid rgba(126, 157, 201, 0.14);
+  border-radius: 10px;
+  background: #0e2038;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px;
+  color: #6682a8;
+}
+.nlm-zone-search input {
+  width: 100%;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: #eef6ff !important;
+  font-size: 12px !important;
+  box-shadow: none !important;
+}
+.nlm-zone-list {
+  max-height: 320px;
+  overflow: auto;
+  margin-top: 8px;
+  display: grid;
+  gap: 3px;
+}
+.nlm-zone-option {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #dceafd;
+  text-align: left;
+  padding: 9px 8px;
+  cursor: pointer;
+}
+.nlm-zone-option:hover,
+.nlm-zone-option.is-active {
+  background: rgba(19, 106, 254, 0.08);
+}
+.nlm-zone-option span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+.nlm-zone-option strong {
+  font-size: 11px;
+}
+.nlm-zone-option small {
+  font-size: 9px;
+  color: #6f89aa;
+}
+.nlm-zone-option em {
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  color: #7897be;
+}
+.nlm-zone-check {
+  color: #4dff9a;
+  font-weight: 900;
+}
+.nlm-zone-empty {
+  padding: 18px;
+  text-align: center;
+  color: #7390b5;
+  font-size: 11px;
+}
+.nlm-schedule-summary {
+  margin-top: 14px;
+  border-radius: 11px;
+  padding: 11px 13px;
+  background: rgba(19, 106, 254, 0.055);
+  border: 1px solid rgba(19, 106, 254, 0.11);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nlm-summary-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #31dd83;
+  box-shadow: 0 0 0 5px rgba(49, 221, 131, 0.08);
+}
+.nlm-schedule-summary div {
+  display: grid;
+  gap: 2px;
+}
+.nlm-schedule-summary strong {
+  font-size: 11px;
+}
+.nlm-schedule-summary small {
+  font-size: 10px;
+  color: #7892b5;
+}
+.nlm-automation-card {
+  border: 1px solid rgba(126, 157, 202, 0.13);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(6, 19, 34, 0.38);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+.nlm-automation-card.is-enabled {
+  border-color: rgba(19, 106, 254, 0.23);
+  background: linear-gradient(
+    145deg,
+    rgba(19, 106, 254, 0.055),
+    rgba(6, 19, 34, 0.45)
+  );
+}
+.nlm-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.nlm-toggle-row > span {
+  display: grid;
+  gap: 2px;
+}
+.nlm-toggle-row strong {
+  font-size: 12px;
+  color: #eef6ff;
+}
+.nlm-toggle-row small {
+  font-size: 10px;
+  color: #768faf;
+}
+.nlm-switch {
+  width: 40px;
+  height: 22px;
+  border: 1px solid rgba(140, 166, 201, 0.18);
+  border-radius: 999px;
+  background: #192a40;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.nlm-switch span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #8194ae;
+  display: block;
+}
+.nlm-switch.is-on {
+  background: #136afe;
+  border-color: #2879ee;
+  justify-content: flex-end;
+}
+.nlm-switch.is-on span {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.nlm-automation-options {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(122, 153, 198, 0.09);
+}
+.nlm-automation-note {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(253, 157, 0, 0.055);
+  border: 1px solid rgba(253, 157, 0, 0.12);
+  color: #fd9d00;
+}
+.nlm-automation-note p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.nlm-automation-note strong {
+  font-size: 10px;
+  color: #ffc05a;
+}
+.nlm-automation-note small {
+  font-size: 9px;
+  color: #8c97aa;
+}
+.nlm-modern-textarea {
+  min-height: 90px;
+}
+.nlm-form-actions {
+  align-items: center;
+}
+.nlm-primary-btn {
+  min-width: 145px;
+  background: linear-gradient(135deg, #136afe, #087ee8) !important;
+  box-shadow: 0 10px 22px rgba(19, 106, 254, 0.19);
+}
+.nlm-form-hint {
+  margin-left: auto;
+  font-size: 9px;
+  color: #627c9f;
+}
+.nlm-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin: 24px 0 10px;
+}
+.nlm-list-heading h3 {
+  margin: 0;
+  color: #eef6ff;
+  font-size: 15px;
+}
+.nlm-schedule-card {
+  overflow: hidden;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+.nlm-schedule-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(115, 155, 215, 0.25);
+}
+.nlm-card-channel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6f88aa;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+.nlm-card-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 13px;
+}
+.nlm-card-timeline > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid rgba(132, 159, 197, 0.08);
+  min-width: 0;
+}
+.nlm-card-timeline > div > span:last-child {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.nlm-card-timeline strong {
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nlm-card-timeline small {
+  font-size: 8px;
+  color: #687f9e;
+}
+.nlm-timeline-icon {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #67a6ff;
+  background: rgba(19, 106, 254, 0.09);
+}
+.nlm-timeline-icon--orange {
+  color: #ffc159;
+  background: rgba(253, 157, 0, 0.08);
+}
+.nlm-timeline-icon--purple {
+  color: #c4a3ff;
+  background: rgba(145, 91, 255, 0.08);
+}
+.nlm-card-automation {
+  margin: 0 16px 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: rgba(23, 196, 102, 0.045);
+  border: 1px solid rgba(23, 196, 102, 0.11);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 9px;
+  color: #7f9cbf;
+}
+.nlm-card-automation strong {
+  color: #73e5a6;
+}
+.nlm-card-automation small {
+  flex-basis: 100%;
+  color: #ff9d9d;
+  margin-top: 3px;
+}
+.nlm-live-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #28d87c;
+  box-shadow: 0 0 0 4px rgba(40, 216, 124, 0.08);
+}
+@media (max-width: 1100px) {
+  .nlm-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .nlm-schedule-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .nlm-tz {
+    grid-column: 1/-1;
+  }
+  .nlm-card-timeline {
+    grid-template-columns: 1fr 1fr;
+  }
+  .nlm-card-timeline > div:last-child {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 700px) {
+  .nlm-details-grid,
+  .nlm-schedule-grid,
+  .nlm-card-timeline,
+  .nlm-automation-options {
+    grid-template-columns: 1fr;
+  }
+  .nlm-tz,
+  .nlm-card-timeline > div:last-child {
+    grid-column: auto;
+  }
+  .nlm-form-section {
+    padding: 18px 0;
+  }
+  .nlm-timezone-popover {
+    left: 0;
+    right: auto;
+  }
+  .nlm-form-hint {
+    display: none;
+  }
+  .nlm-modern-header {
+    align-items: flex-start;
+  }
+  .nlm-zone-code {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nlm-date-trigger,
+  .nlm-timezone-trigger,
+  .nlm-schedule-card {
+    transition: none !important;
+  }
+  .nlm-date-trigger:hover,
+  .nlm-timezone-trigger:hover,
+  .nlm-schedule-card:hover {
+    transform: none !important;
+  }
+}

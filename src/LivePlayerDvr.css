@@ -1,0 +1,336 @@
+/* Phase 4.2 — Viewer Live DVR controls
+   Scoped to LivePlayer so the rest of NLM Streaming remains unchanged. */
+
+.live-player-box:has(.nlm-dvr) {
+  padding-bottom: 94px;
+}
+
+.nlm-dvr {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  z-index: 8;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 13px;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 13, 25, 0.9),
+    rgba(3, 9, 18, 0.96)
+  );
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+  color: #fff;
+  font-family: inherit;
+}
+
+.nlm-dvr__top,
+.nlm-dvr__actions,
+.nlm-dvr__status,
+.nlm-dvr__timeline,
+.nlm-dvr__meta {
+  display: flex;
+  align-items: center;
+}
+
+.nlm-dvr__top {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nlm-dvr__actions {
+  gap: 7px;
+}
+
+.nlm-dvr__button {
+  position: relative;
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.nlm-dvr__button:hover {
+  background: rgba(19, 106, 254, 0.18);
+  border-color: rgba(70, 145, 255, 0.34);
+}
+
+.nlm-dvr__button:active {
+  transform: scale(0.94);
+}
+
+.nlm-dvr__button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.nlm-dvr__button > span {
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  min-width: 12px;
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+}
+
+.nlm-dvr__button--play {
+  background: rgba(19, 106, 254, 0.17);
+  border-color: rgba(56, 137, 255, 0.28);
+}
+
+.nlm-dvr__status {
+  justify-content: flex-end;
+  gap: 9px;
+  min-width: 0;
+}
+
+.nlm-dvr__live-label,
+.nlm-dvr__behind-label {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.nlm-dvr__live-label {
+  color: #66e69c;
+}
+
+.nlm-dvr__live-label > span {
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #25d879;
+  box-shadow: 0 0 0 4px rgba(37, 216, 121, 0.09);
+}
+
+.nlm-dvr__behind-label {
+  color: rgba(223, 233, 247, 0.78);
+}
+
+.nlm-dvr__go-live {
+  border: 1px solid rgba(53, 211, 127, 0.28);
+  border-radius: 8px;
+  background: rgba(28, 195, 106, 0.1);
+  color: #6ce7a1;
+  padding: 6px 9px;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  cursor: pointer;
+}
+
+.nlm-dvr__go-live:hover {
+  background: rgba(28, 195, 106, 0.18);
+}
+
+.nlm-dvr__timeline {
+  gap: 8px;
+}
+
+.nlm-dvr__time {
+  width: 38px;
+  flex: 0 0 38px;
+  color: rgba(173, 190, 214, 0.68);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nlm-dvr__time--live {
+  width: 27px;
+  flex-basis: 27px;
+  color: #61df97;
+  font-weight: 900;
+  text-align: right;
+}
+
+.nlm-dvr__timeline input[type="range"] {
+  --dvr-progress: 100%;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nlm-dvr__timeline input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #136afe 0%,
+    #009bff var(--dvr-progress),
+    rgba(255, 255, 255, 0.13) var(--dvr-progress),
+    rgba(255, 255, 255, 0.13) 100%
+  );
+}
+
+.nlm-dvr__timeline input[type="range"]::-webkit-slider-thumb {
+  width: 13px;
+  height: 13px;
+  margin-top: -4.5px;
+  appearance: none;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #136afe;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.35);
+}
+
+.nlm-dvr__timeline input[type="range"]::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.nlm-dvr__timeline input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #136afe;
+}
+
+.nlm-dvr__timeline input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #136afe;
+}
+
+.nlm-dvr__meta {
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(149, 169, 198, 0.64);
+  font-size: 8px;
+}
+
+.player-live-chip--behind {
+  border-color: rgba(253, 157, 0, 0.35) !important;
+  background: rgba(35, 23, 7, 0.82) !important;
+  color: #ffc05a !important;
+}
+
+.player-live-chip--behind .player-live-chip-dot {
+  background: #fd9d00 !important;
+  box-shadow: 0 0 0 4px rgba(253, 157, 0, 0.1) !important;
+}
+
+@media (max-width: 700px) {
+  .live-player-box:has(.nlm-dvr) {
+    padding-bottom: 91px;
+  }
+
+  .nlm-dvr {
+    left: 7px;
+    right: 7px;
+    bottom: 7px;
+    padding: 9px 10px 8px;
+  }
+
+  .nlm-dvr__meta span:first-child {
+    display: none;
+  }
+
+  .nlm-dvr__meta {
+    justify-content: flex-end;
+  }
+
+  .nlm-dvr__behind-label {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nlm-dvr__button,
+  .nlm-dvr__go-live {
+    transition: none !important;
+  }
+}
+
+/* Phase 4.2 hardening — keyboard/touch accessibility and safer mobile use. */
+.nlm-dvr__button:focus-visible,
+.nlm-dvr__go-live:focus-visible,
+.nlm-dvr__timeline input[type="range"]:focus-visible {
+  outline: 2px solid #7fc4ff;
+  outline-offset: 2px;
+}
+
+.nlm-dvr__timeline input[type="range"] {
+  touch-action: pan-y;
+}
+
+.nlm-dvr__timeline input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px rgba(19, 106, 254, 0.28),
+    0 3px 9px rgba(0, 0, 0, 0.35);
+}
+
+.nlm-dvr__timeline input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(19, 106, 254, 0.28);
+}
+
+@media (max-width: 700px) {
+  .nlm-dvr__button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nlm-dvr__go-live {
+    min-height: 30px;
+  }
+
+  .nlm-dvr__timeline input[type="range"] {
+    height: 20px;
+  }
+}
+
+@media (max-width: 430px) {
+  .nlm-dvr {
+    gap: 6px;
+  }
+
+  .nlm-dvr__top {
+    gap: 8px;
+  }
+
+  .nlm-dvr__behind-label {
+    max-width: 98px;
+  }
+
+  .nlm-dvr__timeline {
+    gap: 5px;
+  }
+
+  .nlm-dvr__time {
+    width: 32px;
+    flex-basis: 32px;
+  }
+
+  .nlm-dvr__time--live {
+    width: 24px;
+    flex-basis: 24px;
+  }
+}
