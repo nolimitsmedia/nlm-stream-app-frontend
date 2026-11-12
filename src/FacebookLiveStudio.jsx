@@ -647,6 +647,26 @@ export default function FacebookLiveStudio({ channelId }) {
     }
   };
 
+  const saveDetails = async () => {
+    setError("");
+    setBusy("save");
+    try {
+      await api.patch(`/api/channels/${channelId}/facebook/settings`, {
+        title: form.title,
+        description: form.description,
+      });
+      formDirty.current = false;
+      setNotice(
+        "Title and description saved. They’ll be used for the next Facebook live.",
+      );
+      await load({ quiet: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not save the title.");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const toggleAutoStart = async (value) => {
     try {
       await api.patch(`/api/channels/${channelId}/facebook/settings`, {
@@ -707,6 +727,7 @@ export default function FacebookLiveStudio({ channelId }) {
   const liveInfo = describeLiveStatus(live?.status);
   const step = !facebook.signedIn ? 1 : !page || picking ? 2 : isLive ? 4 : 3;
   const reconnect = facebook.reconnectRequired;
+  const autoMode = Boolean(target?.autoStart);
 
   return (
     <section className="fls-shell" aria-labelledby={`fls-title-${channelId}`}>
@@ -928,13 +949,53 @@ export default function FacebookLiveStudio({ channelId }) {
                     goLive();
                   }}
                 >
-                  <h5>Start a Facebook live</h5>
+                  <div
+                    className={autoMode ? "fls-auto fls-auto--on" : "fls-auto"}
+                  >
+                    <label
+                      className="fls-switch"
+                      title="When on, NLM starts and ends the Facebook live for you based on your encoder"
+                    >
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={autoMode}
+                        onChange={(e) => toggleAutoStart(e.target.checked)}
+                      />
+                      <span className="fls-switch-track" aria-hidden="true" />
+                      <span className="fls-auto-label">
+                        Automatic Facebook live {autoMode ? "on" : "off"}
+                      </span>
+                    </label>
+                    <p>
+                      {autoMode
+                        ? `Start streaming in OBS (or NLM Stream Control) with this channel’s stream key. About 10 seconds later NLM goes live on ${page.name}. When you stop streaming, the Facebook live ends after a short grace period, so brief disconnects continue the same video.`
+                        : "Facebook goes live only when you click the button below."}
+                    </p>
+                  </div>
+
+                  <div
+                    className={
+                      channel.sourceLive
+                        ? "fls-source fls-source--on"
+                        : "fls-source"
+                    }
+                  >
+                    <span className="fls-dot" aria-hidden="true" />
+                    {channel.sourceLive
+                      ? autoMode
+                        ? "Encoder connected. Starting the Facebook live…"
+                        : "NLM is receiving video from your encoder"
+                      : "Waiting for video from your encoder (OBS, vMix or hardware)"}
+                  </div>
+
+                  <h5>Broadcast details</h5>
                   <label>
                     Title
                     <input
                       value={form.title}
                       maxLength={254}
-                      placeholder={channel.name}
+                      placeholder={`${channel.name} – {date}`}
                       onChange={(e) => {
                         formDirty.current = true;
                         setForm((f) => ({ ...f, title: e.target.value }));
@@ -954,18 +1015,21 @@ export default function FacebookLiveStudio({ channelId }) {
                       }}
                     />
                   </label>
-                  <div
-                    className={
-                      channel.sourceLive
-                        ? "fls-source fls-source--on"
-                        : "fls-source"
-                    }
+                  <small className="fls-hint">
+                    Placeholders for recurring services: {"{date}"} {"{time}"}{" "}
+                    {"{weekday}"} {"{channel}"}. Example: Sunday Service –{" "}
+                    {"{date}"}
+                  </small>
+                  <button
+                    type="button"
+                    className="fls-btn fls-btn--quiet"
+                    onClick={saveDetails}
+                    disabled={busy === "save"}
+                    title="Save the title and description for the next Facebook live without going live"
                   >
-                    <span className="fls-dot" aria-hidden="true" />
-                    {channel.sourceLive
-                      ? "NLM is receiving video from your encoder"
-                      : "Waiting for video from your encoder (OBS, vMix or hardware)"}
-                  </div>
+                    {busy === "save" ? "Saving…" : "Save details"}
+                  </button>
+
                   {sourceOffline ? (
                     <div className="fls-warn">
                       NLM isn’t receiving video for this channel yet. Start your
@@ -981,25 +1045,23 @@ export default function FacebookLiveStudio({ channelId }) {
                   ) : null}
                   <button
                     type="submit"
-                    className="fls-btn fls-btn--golive"
+                    className={
+                      autoMode
+                        ? "fls-btn fls-btn--quiet fls-btn--wide"
+                        : "fls-btn fls-btn--golive"
+                    }
                     disabled={
                       busy === "golive" ||
                       page.connectionStatus === "reconnect_required"
                     }
-                    title={`Creates a live video on ${page.name} and starts sending this channel to it`}
+                    title={`Creates a live video on ${page.name} now and starts sending this channel to it`}
                   >
                     {busy === "golive"
                       ? "Going live…"
-                      : `Go live on ${page.name}`}
+                      : autoMode
+                        ? "Go live now"
+                        : `Go live on ${page.name}`}
                   </button>
-                  <label className="fls-check">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(target?.autoStart)}
-                      onChange={(e) => toggleAutoStart(e.target.checked)}
-                    />
-                    Go live on this Page automatically when my encoder connects
-                  </label>
                   {lastBroadcast ? (
                     <div className="fls-last">
                       <span>Last broadcast</span>
