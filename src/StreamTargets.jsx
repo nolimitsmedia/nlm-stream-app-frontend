@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "./api";
+import FacebookLiveStudio from "./FacebookLiveStudio";
 
 const TARGET_TYPES = [
   {
@@ -939,6 +940,20 @@ function StreamTargets({ channelId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
 
+  // Facebook Page (OAuth) targets are shown and controlled in Facebook Live
+  // Studio, so they are left out of the generic list to avoid two Start buttons.
+  const listedTargets = useMemo(
+    () =>
+      targets.filter(
+        (t) =>
+          !(
+            (t.target_type || t.platform) === "facebook" &&
+            t.automation_mode === "oauth"
+          ),
+      ),
+    [targets],
+  );
+
   const oauthTargets = useMemo(
     () => ({
       facebook: targets.find(
@@ -977,60 +992,10 @@ function StreamTargets({ channelId }) {
 
       {loadError ? <div className="st-inline-error">{loadError}</div> : null}
 
-      {oauthAccounts
-        .filter((account) => account.platform === "facebook_user")
-        .map((account) => (
-          <div className="st-oauth-card" key={`facebook-user-${account.id}`}>
-            <div>
-              <span className="st-kicker">META AUTHENTICATED IDENTITY</span>
-              <strong>
-                Facebook personal account: {account.external_account_name}
-              </strong>
-              <small>
-                Connected via Meta OAuth. Personal timeline publishing is not
-                supported through the Page API. For personal streaming,
-                configure a separate manual RTMPS target.
-              </small>
-            </div>
-            <div className="st-oauth-actions">
-              <span className="st-pill st-pill--good">Connected</span>
-              <button
-                type="button"
-                className="st-btn st-btn--ghost"
-                onClick={async () => {
-                  if (
-                    !window.confirm(
-                      `Disconnect ${account.external_account_name}?`,
-                    )
-                  )
-                    return;
-                  try {
-                    await api.delete(
-                      `/api/organizations/current/oauth-accounts/${account.id}`,
-                    );
-                    await refresh();
-                  } catch (err) {
-                    window.alert(
-                      err.response?.data?.message ||
-                        "Failed to disconnect Facebook identity.",
-                    );
-                  }
-                }}
-              >
-                Disconnect
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Facebook: Page selection, Go Live, live status and Page content. */}
+      <FacebookLiveStudio channelId={channelId} />
 
       <div className="st-oauth-grid">
-        <OAuthConnector
-          channelId={channelId}
-          platform="facebook"
-          target={oauthTargets.facebook}
-          oauthAccounts={oauthAccounts}
-          refresh={refresh}
-        />
         <OAuthConnector
           channelId={channelId}
           platform="youtube"
@@ -1072,18 +1037,18 @@ function StreamTargets({ channelId }) {
         </span>
       </div>
 
-      {targets.length === 0 ? (
+      {listedTargets.length === 0 ? (
         <div className="st-empty">
           <IconTarget size={26} />
           <strong>No stream targets yet</strong>
           <p>
-            Connect Facebook or YouTube above, or add a generic RTMP, RTMPS,
+            Go live on Facebook or connect YouTube above, or add an RTMP, RTMPS,
             SRT, NLM server, or CDN target.
           </p>
         </div>
       ) : (
         <div className="st-target-list">
-          {targets.map((target) => (
+          {listedTargets.map((target) => (
             <TargetCard
               key={target.id}
               channelId={channelId}
