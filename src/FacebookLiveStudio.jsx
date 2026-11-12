@@ -62,6 +62,28 @@ function describeLiveStatus(status) {
   }
 }
 
+// Turns common Graph API refusals into a next step a person can take.
+function explainFacebookError(message) {
+  const text = String(message || "");
+  if (
+    /eligib|not allowed to go live|can't go live|cannot go live|live video is not available/i.test(
+      text,
+    )
+  )
+    return "This Page isn’t allowed to go live yet. Check it in Facebook Live Producer; new Pages or Pages with very few followers can be restricted.";
+  if (
+    /#200|#10\b|permission|not authorized|publish_video|pages_manage_posts/i.test(
+      text,
+    )
+  )
+    return "The app doesn’t have permission to publish live video on this Page. Make sure you’re an app Admin, Developer or Tester while the app is in review, then use Edit Page access and tick the Page again.";
+  if (/#190|session|expired|token|reconnect/i.test(text))
+    return "Facebook access expired. Click Disconnect, then Continue with Facebook again.";
+  if (/HLS|media is not ready|source/i.test(text))
+    return "NLM didn’t have playable video yet. It retries automatically; if this keeps happening, check the encoder’s keyframe interval (2 seconds) and bitrate.";
+  return "NLM retries automatically up to 3 times per stream. You can also click Go live now.";
+}
+
 function apiOrigin() {
   return new URL(
     import.meta.env.VITE_API_URL ||
@@ -474,6 +496,7 @@ export default function FacebookLiveStudio({ channelId }) {
   const [notice, setNotice] = useState("");
   const [picking, setPicking] = useState(false);
   const [sourceOffline, setSourceOffline] = useState(false);
+  const [diag, setDiag] = useState(null);
   const [form, setForm] = useState({ title: "", description: "" });
   const formDirty = useRef(false);
   const popupCleanup = useRef(null);
@@ -667,11 +690,37 @@ export default function FacebookLiveStudio({ channelId }) {
     }
   };
 
-  const toggleAutoStart = async (value) => {
+  const runDiagnostics = async () => {
+    setBusy("diag");
+    setDiag({ running: true, checks: [] });
     try {
-      await api.patch(`/api/channels/${channelId}/facebook/settings`, {
-        autoStart: value,
+      const res = await api.post(
+        `/api/channels/${channelId}/facebook/diagnostics`,
+      );
+      setDiag({ running: false, checks: res.data.checks || [] });
+    } catch (err) {
+      setDiag({
+        running: false,
+        checks: err.response?.data?.checks || [],
+        error:
+          err.response?.data?.message || "Could not run the Facebook check.",
       });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const toggleAutoStart = async (value) => {
+    setError("");
+    try {
+      const res = await api.patch(
+        `/api/channels/${channelId}/facebook/settings`,
+        { autoStart: value },
+      );
+      if (res.data?.started === true)
+        setNotice(
+          "Your encoder is already live, so NLM started the Facebook live.",
+        );
       await load({ quiet: true });
     } catch (err) {
       setError(err.response?.data?.message || "Could not save that setting.");
@@ -866,6 +915,15 @@ export default function FacebookLiveStudio({ channelId }) {
               <button
                 type="button"
                 className="fls-btn fls-btn--quiet"
+                onClick={runDiagnostics}
+                disabled={busy === "diag"}
+                title="Checks permissions and asks Facebook whether this Page can go live. Nothing is posted."
+              >
+                {busy === "diag" ? "Checking…" : "Check Facebook setup"}
+              </button>
+              <button
+                type="button"
+                className="fls-btn fls-btn--quiet"
                 onClick={() => setPicking(true)}
                 disabled={isLive}
                 title={
@@ -878,6 +936,41 @@ export default function FacebookLiveStudio({ channelId }) {
               </button>
             </div>
           </div>
+
+          {diag ? (
+            <section className="fls-diag" aria-label="Facebook setup check">
+              <header>
+                <strong>Facebook setup check</strong>
+                <button
+                  type="button"
+                  className="fls-link"
+                  onClick={() => setDiag(null)}
+                >
+                  Close
+                </button>
+              </header>
+              {diag.running ? (
+                <div className="fls-muted">Asking Facebook…</div>
+              ) : null}
+              {diag.error ? (
+                <div className="fls-error">{diag.error}</div>
+              ) : null}
+              <ul>
+                {diag.checks.map((check) => (
+                  <li
+                    key={check.id}
+                    className={check.ok ? "fls-diag-ok" : "fls-diag-bad"}
+                  >
+                    <span aria-hidden="true">{check.ok ? "✓" : "✕"}</span>
+                    <div>
+                      <strong>{check.label}</strong>
+                      {check.detail ? <small>{check.detail}</small> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <div className="fls-grid">
             <section className="fls-broadcast" aria-label="Broadcast">
@@ -983,11 +1076,31 @@ export default function FacebookLiveStudio({ channelId }) {
                   >
                     <span className="fls-dot" aria-hidden="true" />
                     {channel.sourceLive
-                      ? autoMode
+                      ? autoMode && !target?.failed
                         ? "Encoder connected. Starting the Facebook live…"
                         : "NLM is receiving video from your encoder"
                       : "Waiting for video from your encoder (OBS, vMix or hardware)"}
                   </div>
+
+                  {target?.failed && target?.lastError ? (
+                    <div className="fls-error" role="alert">
+                      <strong>Facebook didn’t go live.</strong> Facebook said:{" "}
+                      {target.lastError}
+                      {target.lastErrorAt
+                        ? ` (${formatWhen(target.lastErrorAt)})`
+                        : ""}
+                      <div className="fls-error-help">
+                        {explainFacebookError(target.lastError)}{" "}
+                        <button
+                          type="button"
+                          className="fls-link"
+                          onClick={runDiagnostics}
+                        >
+                          Check Facebook setup
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <h5>Broadcast details</h5>
                   <label>
