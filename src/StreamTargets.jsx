@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "./api";
 import FacebookLiveStudio from "./FacebookLiveStudio";
+import EncoderCheck from "./EncoderCheck";
 
 const TARGET_TYPES = [
   {
@@ -991,6 +992,9 @@ function StreamTargets({ channelId }) {
       </div>
 
       {loadError ? <div className="st-inline-error">{loadError}</div> : null}
+
+      {/* Encoder pre-flight: keyframe, bitrate, resolution, fps, audio. */}
+      <EncoderCheck channelId={channelId} />
 
       {/* Facebook: Page selection, Go Live, live status and Page content. */}
       <FacebookLiveStudio channelId={channelId} />

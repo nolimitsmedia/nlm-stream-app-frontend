@@ -23,6 +23,7 @@ import SettingsPage from "./SettingsPage";
 import FileBroadcastPage from "./FileBroadcastPage";
 import RecordingsPage from "./RecordingsPage";
 import ApiKeysPage from "./ApiKeysPage";
+import AlertsWebhooksPage from "./AlertsWebhooksPage";
 import SystemStatusPage from "./SystemStatusPage";
 import SuperAdminGuidePage from "./SuperAdminGuidePage";
 import { useSubscription } from "./SubscriptionContext.jsx";
@@ -302,6 +303,8 @@ function DashboardApp() {
           {activePage === "Settings" && <SettingsPage />}
 
           {activePage === "API Keys" && <ApiKeysPage />}
+
+          {activePage === "Alerts & Webhooks" && <AlertsWebhooksPage />}
 
           {activePage === "System Status" && isPlatformAdmin && (
             <SystemStatusPage />

@@ -222,6 +222,21 @@ const NAV_ICONS = {
       <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
     </svg>
   ),
+  "Alerts & Webhooks": (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
   "System Status": (
     <svg
       width="15"
@@ -316,11 +331,12 @@ function Sidebar({ activePage, setActivePage }) {
         ? [
             "Admins",
             "API Keys",
+            "Alerts & Webhooks",
             "System Status",
             "Super Admin Guide",
             "Settings",
           ]
-        : ["API Keys", "Settings"],
+        : ["API Keys", "Alerts & Webhooks", "Settings"],
     },
   ].filter((section) => section.items.length > 0);
 

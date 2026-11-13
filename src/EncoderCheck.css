@@ -1,0 +1,184 @@
+/* Encoder check card — sits at the top of Stream Targets (matches .fls-*). */
+
+.enc {
+  margin: 0 0 14px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a1626;
+  color: #e6edf7;
+  font-size: 12px;
+}
+.enc--pass {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+.enc--warn {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.enc--fail {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+.enc-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.enc-title {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+.enc-title h4 {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+}
+.enc-title p {
+  margin: 0;
+  color: #8494ad;
+  line-height: 1.45;
+  max-width: 70ch;
+}
+.enc-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(13, 110, 253, 0.15);
+  color: #7fb0ff;
+  flex-shrink: 0;
+}
+.enc-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.enc-grade {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  border: 1px solid;
+}
+.enc-grade--pass {
+  color: #86efac;
+  border-color: rgba(74, 222, 128, 0.4);
+}
+.enc-grade--warn {
+  color: #fcd34d;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+.enc-grade--fail {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.5);
+}
+.enc-btn {
+  background: rgba(255, 255, 255, 0.04);
+  color: #c2cee0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.enc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.enc-btn:focus-visible,
+.enc-link:focus-visible {
+  outline: 2px solid #7fb0ff;
+  outline-offset: 2px;
+}
+.enc-error {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(127, 29, 29, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+}
+.enc-checks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.enc-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.enc-check > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.enc-check p {
+  margin: 0;
+  color: #b7c4d8;
+  line-height: 1.45;
+}
+.enc-fix {
+  color: #e6edf7 !important;
+}
+.enc-check-line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.enc-check-line code {
+  color: #8494ad;
+  font-size: 11px;
+}
+.enc-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10.5px;
+  font-weight: 900;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.enc-check--pass .enc-mark {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+}
+.enc-check--warn .enc-mark {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+.enc-check--fail .enc-mark {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.14);
+}
+.enc-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: #8494ad;
+  font-size: 11px;
+}
+.enc-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #7fb0ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
