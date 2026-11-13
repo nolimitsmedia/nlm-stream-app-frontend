@@ -295,7 +295,7 @@ function PagePicker({
 // ─────────────────────────────────────────────────────────────
 // Page content (pages_read_engagement)
 // ─────────────────────────────────────────────────────────────
-function PageContent({ channelId, page, liveId }) {
+function PageContent({ channelId, page, liveId, liveActive = false }) {
   const [tab, setTab] = useState("live");
   const [data, setData] = useState({ loading: true, items: [], error: "" });
 
@@ -329,15 +329,22 @@ function PageContent({ channelId, page, liveId }) {
 
   const load = async (refresh = false) => setData(await fetchContent(refresh));
 
+  // A new or ended broadcast bypasses the server's short content cache, and
+  // while a broadcast is on, the list re-reads every 20 seconds so it shows
+  // up here as soon as Facebook lists it.
   useEffect(() => {
     let active = true;
-    fetchContent().then((next) => {
-      if (active) setData(next);
-    });
+    const read = (refresh) =>
+      fetchContent(refresh).then((next) => {
+        if (active) setData(next);
+      });
+    read(Boolean(liveId));
+    const timer = liveActive ? setInterval(() => read(true), 20000) : null;
     return () => {
       active = false;
+      if (timer) clearInterval(timer);
     };
-  }, [fetchContent, liveId]);
+  }, [fetchContent, liveId, liveActive]);
 
   const tabs = [
     { key: "live", label: "Live videos" },
@@ -773,7 +780,15 @@ export default function FacebookLiveStudio({ channelId }) {
 
   const { facebook, page, target, live, lastBroadcast, channel } = studio;
   const isLive = Boolean(target?.liveVideoId) || Boolean(target?.workerRunning);
-  const liveInfo = describeLiveStatus(live?.status);
+  // Encoder disconnected but the Facebook live is being held open for the
+  // reconnect grace period (worker stopped, broadcast id kept).
+  const inGrace =
+    Boolean(target?.liveVideoId) &&
+    !target?.workerRunning &&
+    String(target?.status || "").toLowerCase() === "stopped";
+  const liveInfo = inGrace
+    ? { text: "Encoder disconnected", tone: "warn" }
+    : describeLiveStatus(live?.status);
   const step = !facebook.signedIn ? 1 : !page || picking ? 2 : isLive ? 4 : 3;
   const reconnect = facebook.reconnectRequired;
   const autoMode = Boolean(target?.autoStart);
@@ -981,10 +996,20 @@ export default function FacebookLiveStudio({ channelId }) {
                       <span className="fls-dot" aria-hidden="true" />
                       {live ? liveInfo.text : "Starting"}
                     </span>
-                    <span className="fls-clock">
-                      {formatUptime(target.uptimeSeconds)}
-                    </span>
+                    {inGrace ? null : (
+                      <span className="fls-clock">
+                        {formatUptime(target.uptimeSeconds)}
+                      </span>
+                    )}
                   </div>
+                  {inGrace ? (
+                    <div className="fls-warn">
+                      NLM stopped receiving video, so Facebook shows “Waiting
+                      for Live Video Signal”. If your encoder reconnects within
+                      about 90 seconds, the same Facebook live continues.
+                      Otherwise NLM ends it automatically.
+                    </div>
+                  ) : null}
                   <h5>
                     {live?.title || target.broadcastTitle || channel.name}
                   </h5>
@@ -1204,6 +1229,7 @@ export default function FacebookLiveStudio({ channelId }) {
               channelId={channelId}
               page={page}
               liveId={target?.liveVideoId || target?.lastLiveVideoId || null}
+              liveActive={isLive}
             />
           </div>
         </>
